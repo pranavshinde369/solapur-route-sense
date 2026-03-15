@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Car, TrafficCone, Leaf, Activity, type LucideIcon } from 'lucide-react';
+import { Car, TrafficCone, Leaf, type LucideIcon } from 'lucide-react';
 
 interface MetricCardProps {
   icon: LucideIcon;
@@ -8,11 +8,10 @@ interface MetricCardProps {
   subtitle: string;
   accentClass: string;
   progress?: number;
-  statusDot?: 'online' | 'initializing' | null;
   isOffline?: boolean;
 }
 
-function MetricCard({ icon: Icon, title, value, subtitle, accentClass, progress, statusDot, isOffline }: MetricCardProps) {
+function MetricCard({ icon: Icon, title, value, subtitle, accentClass, progress, isOffline }: MetricCardProps) {
   const [animate, setAnimate] = useState(false);
   const prevValue = useRef(value);
 
@@ -37,17 +36,8 @@ function MetricCard({ icon: Icon, title, value, subtitle, accentClass, progress,
         {isOffline ? (
           <span className="text-[44px] leading-none font-bold font-mono text-alert">Offline</span>
         ) : (
-          <span
-            className={`text-[44px] leading-none font-bold font-mono text-foreground ${animate ? 'metric-count-up' : ''}`}
-          >
+          <span className={`text-[44px] leading-none font-bold font-mono text-foreground ${animate ? 'metric-count-up' : ''}`}>
             {value}
-          </span>
-        )}
-        {!isOffline && statusDot && (
-          <span className={`text-xs font-medium flex items-center gap-1 mb-1 ${
-            statusDot === 'online' ? 'text-success' : 'text-warning'
-          }`}>
-            {statusDot === 'online' ? '●' : '◌'} {statusDot === 'online' ? 'ONLINE' : 'INITIALIZING'}
           </span>
         )}
       </div>
@@ -64,6 +54,73 @@ function MetricCard({ icon: Icon, title, value, subtitle, accentClass, progress,
   );
 }
 
+function SignalPhaseTimer({ dynamicGreenTime, isOffline }: { dynamicGreenTime: number; isOffline: boolean }) {
+  const [countdown, setCountdown] = useState(dynamicGreenTime);
+  const totalRef = useRef(dynamicGreenTime);
+
+  useEffect(() => {
+    if (dynamicGreenTime > 0) {
+      totalRef.current = dynamicGreenTime;
+      setCountdown(dynamicGreenTime);
+    }
+  }, [dynamicGreenTime]);
+
+  useEffect(() => {
+    if (isOffline || totalRef.current <= 0) return;
+    const t = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) return totalRef.current;
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [isOffline]);
+
+  const total = totalRef.current || 1;
+  const fraction = countdown / total;
+  const ringColor =
+    fraction > 0.3 ? 'hsl(var(--success))' :
+    fraction > 0.1 ? 'hsl(var(--warning))' :
+    'hsl(var(--alert))';
+
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - fraction);
+
+  return (
+    <div className="dashboard-card flex flex-col items-center gap-3">
+      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider self-start">
+        Current Signal Phase
+      </span>
+      <div className="relative w-[140px] h-[140px]">
+        <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+          <circle cx="60" cy="60" r={radius} fill="none" stroke="hsl(var(--secondary))" strokeWidth="8" />
+          <circle
+            cx="60" cy="60" r={radius} fill="none"
+            stroke={isOffline ? 'hsl(var(--muted))' : ringColor}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={isOffline ? circumference : offset}
+            className="transition-all duration-1000 ease-linear"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          {isOffline ? (
+            <span className="text-2xl font-bold font-mono text-alert">--</span>
+          ) : (
+            <>
+              <span className="text-[36px] leading-none font-bold font-mono text-foreground">{countdown}</span>
+              <span className="text-xs text-muted-foreground mt-1">sec</span>
+            </>
+          )}
+        </div>
+      </div>
+      <span className="text-xs text-muted-foreground text-center">Market Yard Junction — Active Phase</span>
+    </div>
+  );
+}
+
 interface MetricCardsProps {
   vehicleCount: number;
   dynamicGreenTime: number;
@@ -72,7 +129,7 @@ interface MetricCardsProps {
   error: string | null;
 }
 
-export function MetricCards({ vehicleCount, dynamicGreenTime, carbonSavedKg, backendStatus, error }: MetricCardsProps) {
+export function MetricCards({ vehicleCount, dynamicGreenTime, carbonSavedKg, error }: MetricCardsProps) {
   const offline = !!error;
 
   return (
@@ -102,15 +159,7 @@ export function MetricCards({ vehicleCount, dynamicGreenTime, carbonSavedKg, bac
         accentClass="bg-emerald-500/20 text-emerald-400"
         isOffline={offline}
       />
-      <MetricCard
-        icon={Activity}
-        title="System Status"
-        value=""
-        subtitle="Backend connection status"
-        accentClass="bg-teal-500/20 text-teal-400"
-        statusDot={offline ? null : backendStatus === 'live' ? 'online' : 'initializing'}
-        isOffline={offline}
-      />
+      <SignalPhaseTimer dynamicGreenTime={dynamicGreenTime} isOffline={offline} />
     </div>
   );
 }
