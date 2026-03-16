@@ -76,11 +76,12 @@ const Alerts = () => {
 
         if (isEncroachment && prevEncroachment.current === false) {
           const zone = zones[Math.floor(Math.random() * zones.length)];
+          const vStatus: 'violation' = 'violation';
           setAlerts(prev => [{
             id: ++idRef.current,
             timestamp: new Date().toLocaleString(),
             zone,
-            status: 'violation',
+            status: vStatus,
             message: 'Encroachment detected in No-Parking Zone',
             challanNo: generateChallan(),
             vehicleType: randomVehicle(),
