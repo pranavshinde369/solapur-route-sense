@@ -4,6 +4,7 @@ import { VideoFeed } from '@/components/VideoFeed';
 import { MetricCards } from '@/components/MetricCards';
 import { AlertBanner } from '@/components/AlertBanner';
 import { AnalyticsSection } from '@/components/AnalyticsSection';
+import { AIChatWidget } from '@/components/AIChatWidget';
 import { useTrafficData } from '@/hooks/useTrafficData';
 
 const Index = () => {
@@ -32,6 +33,7 @@ const Index = () => {
           />
           <VideoFeed />
           <AnalyticsSection />
+          <AIChatWidget />
         </div>
       </main>
     </div>
