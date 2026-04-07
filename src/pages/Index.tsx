@@ -33,6 +33,7 @@ const Index = () => {
           />
           <VideoFeed />
           <AnalyticsSection />
+          <AIChatWidget />
         </div>
       </main>
     </div>
